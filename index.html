@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aligning Diffusion Models with Human Preferences · ECCV 2026 Tutorial</title>
+  <meta name="description" content="ECCV 2026 half-day tutorial on RL-based and non-RL alignment methods for visual diffusion models. 9 September 2026, Malmö, Sweden.">
+
+  <!-- Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Aligning Diffusion Models with Human Preferences · ECCV 2026 Tutorial">
+  <meta property="og:description" content="Half-day tutorial at ECCV 2026 on alignment of image and video diffusion models. 9 September 2026, 13:30–17:30, Malmö.">
+  <meta property="og:url" content="https://diffusion-alignment.github.io/">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text x='50' y='68' font-size='56' text-anchor='middle' fill='white' font-family='Georgia,serif'>DA</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --ink: #0f172a;
+      --ink-2: #334155;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --paper: #ffffff;
+      --paper-soft: #f8fafc;
+      --accent: #4f46e5;
+      --accent-2: #7c3aed;
+      --accent-3: #06b6d4;
+      --accent-soft: #eef2ff;
+      --navy: #0b1120;
+      --serif: "Fraunces", Georgia, "Times New Roman", serif;
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --maxw: 1080px;
+      --radius: 18px;
+      --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -16px rgba(15, 23, 42, .18);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.15; margin: 0 0 .5em; letter-spacing: -0.01em; }
+    h2 { font-size: clamp(1.9rem, 3vw, 2.4rem); }
+    h3 { font-size: 1.15rem; }
+    p { margin: 0 0 1em; }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+    section { padding: 88px 0; }
+    section.soft { background: var(--paper-soft); }
+    .section-head { text-align: center; max-width: 60ch; margin: 0 auto 44px; }
+    .eyebrow {
+      display: inline-block;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(11, 17, 32, .85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    nav .brand { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; color: #fff; letter-spacing: -0.01em; }
+    nav .brand:hover { text-decoration: none; }
+    nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; }
+    nav li a { color: rgba(255,255,255,.72); font-size: .92rem; font-weight: 500; transition: color .15s; }
+    nav li a:hover { color: #fff; text-decoration: none; }
+    @media (min-width: 761px) and (max-width: 1000px) { nav ul { gap: 16px; } nav li a { font-size: .82rem; } }
+    @media (max-width: 760px) { nav ul { display: none; } }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      color: #fff;
+      background: var(--navy);
+      padding: 104px 0 96px;
+      text-align: center;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero::before {
+      content: "";
+      position: absolute; inset: 0; z-index: -1;
+      background:
+        radial-gradient(700px 480px at 18% 0%, rgba(124, 58, 237, .55), transparent 65%),
+        radial-gradient(620px 460px at 85% 10%, rgba(79, 70, 229, .55), transparent 65%),
+        radial-gradient(520px 420px at 60% 110%, rgba(6, 182, 212, .32), transparent 65%),
+        linear-gradient(180deg, #0b1120 0%, #111a33 100%);
+    }
+    .hero::after {
+      content: "";
+      position: absolute; inset: 0; z-index: -1; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,.9), transparent 75%);
+      -webkit-mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,.9), transparent 75%);
+    }
+    .hero .pill {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+      color: rgba(255,255,255,.85);
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      margin-bottom: 28px;
+    }
+    .hero .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-3); box-shadow: 0 0 0 4px rgba(6,182,212,.25); }
+    .hero h1 {
+      font-size: clamp(2.4rem, 5.6vw, 4.2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      max-width: 20ch;
+      margin: 0 auto 22px;
+      color: #fff;
+    }
+    .hero h1 em { font-style: italic; font-weight: 500; color: #c7d2fe; }
+    .hero .lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: rgba(255,255,255,.78); max-width: 58ch; margin: 0 auto 40px; }
+    .facts {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+      margin: 0 auto 40px;
+    }
+    .fact {
+      display: flex; align-items: center; gap: 12px;
+      text-align: left;
+      padding: 12px 18px 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(6px);
+    }
+    .fact svg { width: 20px; height: 20px; flex: none; color: #a5b4fc; }
+    .fact .v { font-weight: 600; font-size: .95rem; color: #fff; line-height: 1.3; }
+    .fact .s { font-size: .8rem; color: rgba(255,255,255,.62); line-height: 1.3; margin-top: 2px; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-weight: 600; font-size: .95rem;
+      border: 1px solid transparent;
+      transition: transform .15s, background .15s, color .15s, border-color .15s;
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn.primary { background: #fff; color: var(--navy); }
+    .btn.primary:hover { background: #eef2ff; }
+
+    /* Overview */
+    .prose { max-width: 68ch; margin: 0 auto; font-size: 1.05rem; color: var(--ink-2); }
+    .prose p { margin-bottom: 1.1em; }
+    .learn { margin-top: 56px; }
+    .learn h3 { text-align: center; font-size: 1.5rem; margin-bottom: 26px; }
+    .learn ol { list-style: none; padding: 0; margin: 0; counter-reset: item; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .learn ol { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .learn ol { grid-template-columns: 1fr; } }
+    .learn li {
+      counter-increment: item;
+      position: relative;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px 22px 22px 22px;
+      box-shadow: var(--shadow);
+      color: var(--ink-2);
+      line-height: 1.55;
+    }
+    .learn li::before {
+      content: counter(item, decimal-leading-zero);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px;
+      font-family: var(--serif); font-weight: 700; font-size: .95rem;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      margin-bottom: 14px;
+    }
+    .learn li strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+    /* Speakers */
+    .people { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .people { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .people { grid-template-columns: 1fr; } }
+    .person {
+      display: block; text-align: center;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 30px 20px 26px;
+      box-shadow: var(--shadow);
+      transition: transform .18s, box-shadow .18s, border-color .18s;
+    }
+    .person:hover { text-decoration: none; transform: translateY(-4px); box-shadow: 0 18px 40px -18px rgba(79,70,229,.35); border-color: #c7d2fe; }
+    .person .photo {
+      width: 136px; height: 136px; border-radius: 50%;
+      margin: 0 auto 18px;
+      padding: 4px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--accent-3));
+    }
+    .person img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; border: 3px solid #fff; }
+    .person h3 { margin: 0 0 4px; font-size: 1.2rem; }
+    .person .aff { color: var(--muted); font-size: .92rem; line-height: 1.4; }
+    .person .go { display: inline-block; margin-top: 12px; font-size: .82rem; font-weight: 600; color: var(--accent); opacity: 0; transform: translateY(4px); transition: opacity .18s, transform .18s; }
+    .person:hover .go { opacity: 1; transform: none; }
+
+    /* Schedule */
+    .sched-meta { text-align: center; color: var(--muted); margin: -28px 0 44px; }
+    .timeline { max-width: 880px; margin: 0 auto; position: relative; }
+    .timeline::before {
+      content: ""; position: absolute; top: 12px; bottom: 12px; left: 158px;
+      width: 2px; background: linear-gradient(180deg, var(--accent), var(--accent-2), var(--accent-3));
+      border-radius: 2px; opacity: .55;
+    }
+    .slot { display: grid; grid-template-columns: 130px 56px 1fr; align-items: start; padding: 8px 0; }
+    .slot .time { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding-top: 18px; }
+    .slot .time small { display: block; font-weight: 500; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+    .slot .mark { position: relative; height: 100%; }
+    .slot .mark::before {
+      content: ""; position: absolute; left: 21px; top: 22px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; border: 3px solid var(--accent);
+      box-shadow: 0 0 0 4px #fff;
+    }
+    .slot .card {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 16px 20px; box-shadow: var(--shadow);
+      display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+    }
+    .slot .title { font-weight: 600; font-size: 1.02rem; color: var(--ink); line-height: 1.4; flex: 1 1 320px; }
+    .slot .who {
+      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+      font-size: .85rem; font-weight: 600; color: var(--accent);
+      background: var(--accent-soft); padding: 6px 12px; border-radius: 999px;
+    }
+    .slot .who img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+    .slot .who:hover { text-decoration: none; background: #e0e7ff; color: #3730a3; }
+    .slot .speaker-links { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
+    .slot .slide-download {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; flex: none;
+      background: transparent; border-radius: 8px;
+      transition: background .15s;
+    }
+    .slot .slide-download img { width: 34px; height: 34px; display: block; }
+    .slot .slide-download:hover { text-decoration: none; background: #fff1eb; }
+    .slot .slide-download:focus-visible, .slot .who:focus-visible {
+      outline: 3px solid var(--accent); outline-offset: 3px;
+    }
+    .slot.break .time { color: var(--muted); font-weight: 500; }
+    .slot.break .mark::before { width: 10px; height: 10px; left: 23px; top: 19px; border-color: #cbd5e1; }
+    .slot.break .card { background: transparent; border: 1px dashed #cbd5e1; box-shadow: none; padding: 10px 20px; }
+    .slot.break .title { color: var(--muted); font-weight: 500; font-size: .95rem; }
+    @media (max-width: 680px) {
+      .timeline::before { left: 11px; }
+      .slot { grid-template-columns: 24px 1fr; }
+      .slot .time { grid-column: 2; text-align: left; padding: 0 0 6px; }
+      .slot .time small { display: inline; margin-left: 8px; }
+      .slot .mark { grid-column: 1; grid-row: 1 / span 2; }
+      .slot .mark::before { left: 4px; top: 4px; }
+      .slot.break .mark::before { left: 6px; top: 6px; }
+      .slot .card { grid-column: 2; }
+    }
+
+    footer { background: var(--navy); color: rgba(255,255,255,.6); font-size: .9rem; padding: 36px 0; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#top">Diffusion Alignment · ECCV 2026</a>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#speakers">Organizers &amp; Speakers</a></li>
+        <li><a href="#schedule">Schedule</a></li>
+        <li><a href="#schedule">Download slides</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="wrap">
+      <span class="pill"><span class="dot"></span>ECCV 2026 · Tutorial · Malmö, Sweden</span>
+      <h1>Aligning Diffusion Models <em>with</em> Human Preferences</h1>
+      <p class="lead">
+        A half-day tutorial on RL-based and non-RL alignment methods for visual diffusion models.
+      </p>
+
+      <div class="facts">
+        <div class="fact">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
+          <div><div class="v">Wednesday, 9 September 2026</div><div class="s">Afternoon session</div></div>
+        </div>
+        <div class="fact">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div><div class="v">13:30 – 17:30</div><div class="s">Central European Summer Time (CEST)</div></div>
+        </div>
+        <div class="fact">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.2-6-11a6 6 0 0 1 12 0c0 5.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+          <div><div class="v">Quality View Oresundssalen - 2</div><div class="s">Quality Hotel View, next to Malmömässan</div></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" href="#schedule">Download slides</a>
+      </div>
+    </div>
+  </header>
+
+  <section id="overview">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Overview</span>
+      </div>
+      <div class="prose">
+        <p>
+          Aligning diffusion models with human preferences has become an increasingly important research area
+          in visual generation. This half-day tutorial gives a structured introduction to the area, organized
+          around the four main families of alignment methods: direct reward backpropagation, which differentiates
+          a reward through the sampling process; DPO-style preference optimization, which learns from pairs of
+          preferred and rejected samples; GRPO-based online RL, which samples groups of outputs and learns from
+          their relative rewards; and forward-process RL, which reformulates the alignment objective on the
+          forward diffusion process, close to the pre-training objective.
+        </p>
+        <p>
+          For each family, we cover the core formulation, representative methods, and their strengths and
+          limitations, and we close with open challenges and future directions.
+        </p>
+      </div>
+
+      <div class="learn">
+        <h3>What you will learn</h3>
+        <ol>
+          <li><strong>Problem setup</strong>What alignment means for visual diffusion models</li>
+          <li><strong>Direct reward backpropagation</strong>Aligning diffusion models by backpropagating reward gradients through the sampling process</li>
+          <li><strong>DPO-style alignment</strong>Preference optimization for diffusion models</li>
+          <li><strong>GRPO-based online RL</strong>Learning from the relative rewards of a group of samples</li>
+          <li><strong>Forward-process RL</strong>Reformulating alignment on the forward diffusion process for more accurate likelihood estimation</li>
+          <li><strong>Looking ahead</strong>Open challenges and future directions</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="speakers" class="soft">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">People</span>
+        <h2>Organizers &amp; Speakers</h2>
+      </div>
+      <div class="people">
+        <a class="person" href="https://zheng-lab-anu.github.io/" target="_blank" rel="noopener">
+          <div class="photo"><img src="assets/speakers/liang_zheng.jpg" alt="Liang Zheng"></div>
+          <h3>Liang Zheng</h3>
+          <div class="aff">The Australian National University</div>
+          <span class="go">Homepage →</span>
+        </a>
+        <a class="person" href="https://github.com/RockeyCoss" target="_blank" rel="noopener">
+          <div class="photo"><img src="assets/speakers/zhanhao_liang.JPG" alt="Zhanhao Liang"></div>
+          <h3>Zhanhao Liang</h3>
+          <div class="aff">The Australian National University</div>
+          <span class="go">Homepage →</span>
+        </a>
+        <a class="person" href="https://scxue.github.io/" target="_blank" rel="noopener">
+          <div class="photo"><img src="assets/speakers/shuchen_xue.jpg" alt="Shuchen Xue"></div>
+          <h3>Shuchen Xue</h3>
+          <div class="aff">NVIDIA</div>
+          <span class="go">Homepage →</span>
+        </a>
+        <a class="person" href="https://jieliu.site/" target="_blank" rel="noopener">
+          <div class="photo"><img src="assets/speakers/jie_liu.jpg" alt="Jie Liu"></div>
+          <h3>Jie Liu</h3>
+          <div class="aff">The Chinese University of Hong Kong</div>
+          <span class="go">Homepage →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="schedule">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Schedule</span>
+        <h2>Wednesday, 9 September 2026 · 13:30 – 17:30 CEST</h2>
+      </div>
+      <p class="sched-meta">Room: Quality View Oresundssalen - 2</p>
+
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">13:30 – 13:45<small>15 min</small></div>
+          <div class="mark"></div>
+          <div class="card">
+            <div class="title">Opening remarks: An introduction to diffusion model alignment</div>
+            <div class="speaker-links">
+              <a class="who" href="https://zheng-lab-anu.github.io/" target="_blank" rel="noopener"><img src="assets/speakers/liang_zheng.jpg" alt="">Liang Zheng</a>
+              <a class="slide-download" href="assets/slides/tutorial-opening.pptx" download="tutorial-opening.pptx" aria-label="Download opening slides by Liang Zheng (PowerPoint, 20.5 MB)" title="Download opening slides by Liang Zheng (PowerPoint, 20.5 MB)">
+                <img src="assets/icons/powerpoint.svg" alt="" aria-hidden="true" width="34" height="34">
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">13:45 – 14:25<small>40 min</small></div>
+          <div class="mark"></div>
+          <div class="card">
+            <div class="title">Reward gradients tell you where to go: Aligning diffusion models with direct backpropagation</div>
+            <div class="speaker-links">
+              <a class="who" href="https://github.com/RockeyCoss" target="_blank" rel="noopener"><img src="assets/speakers/zhanhao_liang.JPG" alt="">Zhanhao Liang</a>
+              <a class="slide-download" href="assets/slides/direct-reward-gradients.pptx" download="direct-reward-gradients.pptx" aria-label="Download direct reward gradients slides by Zhanhao Liang (PowerPoint, 60.0 MB)" title="Download direct reward gradients slides by Zhanhao Liang (PowerPoint, 60.0 MB)">
+                <img src="assets/icons/powerpoint.svg" alt="" aria-hidden="true" width="34" height="34">
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="slot break">
+          <div class="time">14:25 – 14:35<small>10 min</small></div>
+          <div class="mark"></div>
+          <div class="card"><div class="title">Break</div></div>
+        </div>
+        <div class="slot">
+          <div class="time">14:35 – 15:20<small>45 min</small></div>
+          <div class="mark"></div>
+          <div class="card">
+            <div class="title">Learning from preferences: DPO-style alignment for diffusion models</div>
+            <div class="speaker-links">
+              <a class="who" href="https://github.com/RockeyCoss" target="_blank" rel="noopener"><img src="assets/speakers/zhanhao_liang.JPG" alt="">Zhanhao Liang</a>
+              <a class="slide-download" href="assets/slides/dpo.pptx" download="dpo.pptx" aria-label="Download DPO slides by Zhanhao Liang (PowerPoint, 10.0 MB)" title="Download DPO slides by Zhanhao Liang (PowerPoint, 10.0 MB)">
+                <img src="assets/icons/powerpoint.svg" alt="" aria-hidden="true" width="34" height="34">
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="slot break">
+          <div class="time">15:45 – 15:55<small>10 min</small></div>
+          <div class="mark"></div>
+          <div class="card"><div class="title">Coffee break</div></div>
+        </div>
+        <div class="slot">
+          <div class="time">15:55 – 16:40<small>45 min</small></div>
+          <div class="mark"></div>
+          <div class="card">
+            <div class="title">Sample, compare, improve: GRPO-based online RL for diffusion models</div>
+            <div class="speaker-links">
+              <a class="who" href="https://jieliu.site/" target="_blank" rel="noopener"><img src="assets/speakers/jie_liu.jpg" alt="">Jie Liu</a>
+              <a class="slide-download" href="assets/slides/grpo.pptx" download="grpo.pptx" aria-label="Download GRPO slides by Jie Liu (PowerPoint, 10.3 MB)" title="Download GRPO slides by Jie Liu (PowerPoint, 10.3 MB)">
+                <img src="assets/icons/powerpoint.svg" alt="" aria-hidden="true" width="34" height="34">
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="slot break">
+          <div class="time">16:40 – 16:45<small>5 min</small></div>
+          <div class="mark"></div>
+          <div class="card"><div class="title">Short break</div></div>
+        </div>
+        <div class="slot">
+          <div class="time">16:45 – 17:30<small>45 min</small></div>
+          <div class="mark"></div>
+          <div class="card">
+            <div class="title">Rethinking the objective: Forward-process RL for diffusion models</div>
+            <div class="speaker-links">
+              <a class="who" href="https://scxue.github.io/" target="_blank" rel="noopener"><img src="assets/speakers/shuchen_xue.jpg" alt="">Shuchen Xue</a>
+              <a class="slide-download" href="assets/slides/awm.pdf" download="awm.pdf" aria-label="Download forward-process RL slides by Shuchen Xue (PDF, 4.7 MB)" title="Download forward-process RL slides by Shuchen Xue (PDF, 4.7 MB)">
+                <img src="assets/icons/powerpoint.svg" alt="" aria-hidden="true" width="34" height="34">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Tutorial organizers · Aligning Diffusion Models with Human Preferences</span>
+      <span>ECCV 2026 · 8–12 September · Malmö, Sweden</span>
+    </div>
+  </footer>
+</body>
+</html>
